@@ -17,13 +17,13 @@ $a=1;
 	$files = scandir($dir); // Scan for files in directory, alphabetically sorted
 
 	$f = array_filter($files, "full"); // Calls full() on file list array, assumes full size files are correctly named
-
 	$count = 0;
-	// Step through list of full sized files and create page and thumnb files
+	// Step through list of full sized files and create page and thumb files
 	foreach($f as $exfull) {
 		getelement($exfull); // filename is parsed for page number and file type
 		$count++;
 		if ($count == $anum) {
+/*
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
 //			print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 			// Single width pages, maybe
@@ -33,9 +33,9 @@ $a=1;
 //			print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
-			resizeImage($exfull, $exthumb, 200, 0, 100); // Resize full page to thumbnail filename.
+			resizeImage($exfull, $exthumb, 200, 0, 100); // Resize full page to thumbnail filename. */
 		} else {
-			$exfull = "f" . sprintf("%'.03d", ($count - 1)) . $ftype; // Rebuild old full filename
+/*			$exfull = "f" . sprintf("%'.03d", ($count - 1)) . $ftype; // Rebuild old full filename
 			$expage = "p" . sprintf("%'.03d", ($count - 1)) . $ftype; // Build page filename
 //			print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 			// Double width pages
@@ -45,9 +45,9 @@ $a=1;
 //			print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 			// Double width pages
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
-			resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
+			resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename. */
 			$count++;
-			$exfull = "f" . sprintf("%'.03d", ($count)) . $ftype; // Rebuild new full filename
+/*			$exfull = "f" . sprintf("%'.03d", ($count)) . $ftype; // Rebuild new full filename
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
 //			print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 			// Single width pages, maybe
@@ -57,13 +57,13 @@ $a=1;
 //			print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
-			resizeImage($exfull, $exthumb, 200, 0, 100); // Resize full page to thumbnail filename.
+			resizeImage($exfull, $exthumb, 200, 0, 100); // Resize full page to thumbnail filename. */
 		}
 	}
 	if ($count % 16 <> 0) // Not the last page in a frame
 	{
 		$count++;
-		$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
+/*		$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
 //		print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 		// Single width pages, maybe
 		// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
@@ -73,8 +73,8 @@ $a=1;
 		// Single width pages, maybe
 		// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 		resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
+	*/
 	}
-	
 	// As above, rescans including page and thumb image files.
 	$dir    = './';
 	$files = scandir($dir);
@@ -84,7 +84,13 @@ $a=1;
 	$t = array_filter($files, "thumb");
 	$p = array_filter($files, "pic");
 	$i = array_filter($files, "item");
-	
+	/*
+	$keys = array_keys($p); // For use in determining what page is next
+	for ($inc = 0; $inc < count($keys); $inc++) {
+		$cur = $p[$keys[$inc]];
+		$next = $p[$keys[$inc+1]];
+	}
+	*/
 	// Figure out how big the exhibit is. 
 	// Since we incremented $count for missing pages the pages/16 should be close.
 	// Future: potentially pull in frame layout from a data file.
@@ -258,8 +264,14 @@ function buildframe($ffile, $framenum, $numframes)
 	foreach($p as &$value) {
 		getelement($value);
 		print_r("Index: " . $index . " Step: " . $step . " Anum: " . $anum . " Framenum: " . $framenum . "\n");
-		if ($anum > $framenum * 16)
+		if ($anum < ($framenum - 1) * 16) { // We are not yet to the frame
+			print_r ("Before Frame.\n");
+			continue;
+		}
+		if ($anum > $framenum * 16) { // We are past the current frame
+			print_r ("After Frame.\n");
 			break;
+		}
 		else if (($index + $step == $anum) && (intdiv($anum - 1, 16) === ($framenum - 1))) { // Page position matches page number and we're in the right frame
 			if ($step % 4 == 1) { // First page in a frame row
 				$txt = "\t<tr>\n";
@@ -389,7 +401,7 @@ function buildpage($pfile, $pagenum, $numpages, $item) {
 	else
 		$txt = "<a href=\"expage" . (sprintf("%'.03d", $pagenum - 1)) . ".html\"><button class=\"button exbutton\">Previous Page</button></a></td>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . ($pagenum - (($pagenum - 1) % 16)) . "</button></a>\n\t\t\t\t</td>\n";
+	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . $upframe . "</button></a>\n\t\t\t\t</td>\n";
 	fwrite ($pfile, $txt);
 	if ($pagenum === $numpages)
 		$txt = "\t\t\t\t<td>\n\t\t\t\t\t&nbsp;\n\t\t\t\t</td>\n";
