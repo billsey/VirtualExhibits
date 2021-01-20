@@ -1,0 +1,39 @@
+﻿<style>
+
+
+.center {
+	text-align: center;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.button {
+  border: 4px solid green;
+  color: black;
+  text-align: center;
+  text-decoration: none;
+  text-shadow: 2px 2px 8px #aaaaaa;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+}
+
+.exbutton {
+  width: 200px; 
+  height: 80px;
+}
+
+.exnavigation {
+  width: 200px; 
+  height: 40px;
+}
+
+.dropshadow {
+	border:2px solid black;
+	box-shadow: 10px 10px 5px grey;
+	-moz-box-shadow: 10px 10px 5px grey;
+	-webkit-box-shadow: 10px 10px 5px grey;
+	-khtml-box-shadow: 10px 10px 5px grey;
+}
+
+</style>
