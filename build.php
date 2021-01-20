@@ -17,6 +17,7 @@ $a=1;
 	$files = scandir($dir); // Scan for files in directory, alphabetically sorted
 
 	$f = array_filter($files, "full"); // Calls full() on file list array, assumes full size files are correctly named
+
 	$count = 0;
 	// Step through list of full sized files and create page and thumb files
 	foreach($f as $exfull) {
@@ -44,7 +45,7 @@ $a=1;
 //			print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 			// Double width pages
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
-			resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename. 
+			resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
 			$count++;
 			$exfull = "f" . sprintf("%'.03d", ($count)) . $ftype; // Rebuild new full filename
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
@@ -73,6 +74,7 @@ $a=1;
 		// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 		resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
 	}
+	
 	// As above, rescans including page and thumb image files.
 	$dir    = './';
 	$files = scandir($dir);
@@ -82,7 +84,7 @@ $a=1;
 	$t = array_filter($files, "thumb");
 	$p = array_filter($files, "pic");
 	$i = array_filter($files, "item");
-
+	
 	// Figure out how big the exhibit is. 
 	// Since we incremented $count for missing pages the pages/16 should be close.
 	// Future: potentially pull in frame layout from a data file.
@@ -91,23 +93,11 @@ $a=1;
 	$numpages = $count; //May not be valid when accounting for double pages.
 	print_r("Number of Pages: " . $numpages . "\n");
 	
-	// Create variables for use when parsing a file name.
+	// Creat variables for use when parsing a file name.
 	$atype = ""; // Array type; f, p, t, i
 	$anum = 0; // Page number
 	$enum = 0; // Item number on page
 	$ftype = ""; // File type (.jpg, .png, etc.)
-
-	// For use in determining what page is next
-	$nextatype = ""; // Array type; f, p, t, i
-	$nextanum = 0; // Page number
-	$nextenum = 0; // Item number on page
-	$nextftype = ""; // File type (.jpg, .png, etc.)
-
-	// For use in determining what page was last
-	$prevatype = "";
-	$prevanum = 0;
-	$prevenum = 0;
-	$prevftype = "";
 
 
 // Now, build the frame page, or pages, using the thumb array and the frames count.
@@ -117,16 +107,8 @@ for ($iteration = 1; $iteration <= $numframes; $iteration++) {
 }
 
 // And then build the pages the frame links point to.
-// Needs handling of missing pages due to double width.
-foreach ($p as $expage) {
-	getelement($expage);
-	$iteration = $anum;
-	$pagefile = fopen("expage" . sprintf("%'.03d", $iteration) . ".html", "w") or die("Unable to open page file!");
-	$nextvalue = next($p);
-	getnextelement($nextvalue);
-	$prevvalue = prev($p);
-	getprevelement($prevvalue);
-	print_r("Anum: " . $anum . " Next Anum: " . $nextanum . " Previous anum: " . $prevanum . "\n");
+for ($iteration = 1; $iteration <= $count; $iteration++) {
+	$pagefile = fopen("expage" . sprintf("%'.03d", $iteration) . ".html", "w") or die("Unable to open frame file!");
 	buildpage($pagefile, $iteration, $numpages, $i);
 }
 
@@ -408,16 +390,6 @@ function buildpage($pfile, $pagenum, $numpages, $item) {
 	global $enum;
 	global $ftype;
 
-	global $nextatype;
-	global $nextanum;
-	global $nextenum;
-	global $nextftype;
-	
-	$nextatype = ""; // Array type; f, p, t, i
-	$nextanum = 0; // Page number
-	$nextenum = 0; // Item number on page
-	$nextftype = ""; // File type (.jpg, .png, etc.)
-
 	// Initial page setup
 	$titlefile = fopen("extitle.txt", "r") or die("Unable to open title file!");
 	$extitle = fgets($titlefile);
@@ -444,7 +416,7 @@ function buildpage($pfile, $pagenum, $numpages, $item) {
 	else
 		$txt = "<a href=\"expage" . (sprintf("%'.03d", $pagenum - 1)) . ".html\"><button class=\"button exbutton\">Previous Page</button></a></td>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . $upframe . "</button></a>\n\t\t\t\t</td>\n";
+	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . ($pagenum - (($pagenum - 1) % 16)) . "</button></a>\n\t\t\t\t</td>\n";
 	fwrite ($pfile, $txt);
 	if ($pagenum === $numpages)
 		$txt = "\t\t\t\t<td>\n\t\t\t\t\t&nbsp;\n\t\t\t\t</td>\n";
