@@ -1,5 +1,5 @@
 <?php
-//	ini_set('memory_limit', '128M');
+	ini_set('memory_limit', '128M');
 
 	// Jan Zikan, Czech Repulic, https://gist.github.com/janzikan
 function resizeImage($sourceImage, $targetImage, $maxWidth, $maxHeight, $quality = 80)
@@ -68,36 +68,30 @@ $a=1;
 		$count++;
 		if ($count == $anum) {
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
-//			print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 			resizeImage($exfull, $expage, 800, 0, 100); // Resize full page to page filename. 
 			$exthumb = "t" . sprintf("%'.03d", $anum) . $ftype; // Build thumbnail filename.
-//			print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 			resizeImage($exfull, $exthumb, 200, 0, 100); // Resize full page to thumbnail filename.
 		} else {
 			$exfull = "f" . sprintf("%'.03d", ($count - 1)) . $ftype; // Rebuild old full filename
 			$expage = "p" . sprintf("%'.03d", ($count - 1)) . $ftype; // Build page filename
-//			print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 			// Double width pages
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 			resizeImage($exfull, $expage, 1600, 0, 100); // Resize full page to page filename. 
 			$exthumb = "t" . sprintf("%'.03d", ($count - 1)) . $ftype; // Build thumbnail filename.
-//			print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 			// Double width pages
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 			resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
 			$count++;
 			$exfull = "f" . sprintf("%'.03d", ($count)) . $ftype; // Rebuild new full filename
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
-//			print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 			resizeImage($exfull, $expage, 800, 0, 100); // Resize full page to page filename. 
 			$exthumb = "t" . sprintf("%'.03d", $anum) . $ftype; // Build thumbnail filename.
-//			print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 			resizeImage($exfull, $exthumb, 200, 0, 100); // Resize full page to thumbnail filename.
@@ -150,9 +144,50 @@ for ($iteration = 1; $iteration <= $numframes; $iteration++) {
 }
 
 // And then build the pages the frame links point to.
+/*
 for ($iteration = 1; $iteration <= $count; $iteration++) {
 	$pagefile = fopen("expage" . sprintf("%'.03d", $iteration) . ".html", "w") or die("Unable to open frame file!");
 	buildpage($pagefile, $iteration, $numpages, $i);
+}
+*/
+
+// And then build the pages the frame links point to.
+foreach ($p as $currpage) {
+	global $i; 
+	global $atype;
+	global $anum;
+	global $enum;
+	global $ftype;
+	global $nextatype;
+	global $nextanum;
+	global $nextenum;
+	global $nextftype;
+	global $prevatype;
+	global $prevanum;
+	global $prevenum;
+	global $prevftype;
+	global $numpages;
+	
+	$index = array_search($currpage, $p);
+	$previndex = $index - 1;
+	$nextindex = $index + 1;
+//	print_r("Previous: " . $p[$previndex] . " Current: " . $p[$index] . " Next: " . $p[$nextindex] . "\n");
+
+	getelement($currpage);
+	if (array_key_exists($previndex, $p)) {
+		getprevelement($p[$previndex]);
+	} else { 
+		$prevanum = 0;
+	}
+	if (array_key_exists($nextindex, $p)) {
+		getnextelement($p[$nextindex]);
+	} else { 
+		$nextanum = 0;
+	}
+	print_r("Previous: " . $prevanum . " Current: " . $anum . " Next: " . $nextanum . "\n");
+	
+	$pagefile = fopen("expage" . sprintf("%'.03d", $anum) . ".html", "w") or die("Unable to open page file!");
+	buildpage($pagefile, $prevanum, $anum, $nextanum, $numpages, $i);
 }
 
 function getitems($pagenum)
@@ -424,7 +459,7 @@ function buildframe($ffile, $framenum, $numframes)
 	fclose($ffile);
 }
 
-function buildpage($pfile, $pagenum, $numpages, $item) {
+function buildpage($pfile, $prevpage, $pagenum, $nextpage, $numpages, $item) {
 	global $items;
 	global $i;
 
@@ -438,7 +473,7 @@ function buildpage($pfile, $pagenum, $numpages, $item) {
 	$extitle = fgets($titlefile);
 	$title = $extitle . " Page " . $pagenum;
 	$upframe = sprintf("%'.02d", (intdiv($pagenum, 16) + 1));
-	print_r("pagenum: " . $pagenum . " upframe: " . $upframe . "\n");
+//	print_r("pagenum: " . $pagenum . " upframe: " . $upframe . "\n");
 	$txt = "<!DOCTYPE html>\n<html>\n\n<head>";
 	fwrite ($pfile, $txt);
 	$txt = "<Title>" . $title . "</title>\n";
@@ -454,17 +489,17 @@ function buildpage($pfile, $pagenum, $numpages, $item) {
 	fwrite ($pfile, $txt);
 	$txt = "\t\t\t\t<td align=\"center\">";
 	fwrite ($pfile, $txt);
-	if ($pagenum === 1)
+	if (!$prevpage)
 		$txt = "\t\t\t\t<td>\n\t\t\t\t\t&nbsp;\n\t\t\t\t</td>\n";
 	else
-		$txt = "<a href=\"expage" . (sprintf("%'.03d", $pagenum - 1)) . ".html\"><button class=\"button exbutton\">Previous Page</button></a></td>\n";
+		$txt = "<a href=\"expage" . (sprintf("%'.03d", $prevpage)) . ".html\"><button class=\"button exbutton\">Previous Page</button></a></td>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . ($pagenum - (($pagenum - 1) % 16)) . "</button></a>\n\t\t\t\t</td>\n";
+	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . $upframe . "</button></a>\n\t\t\t\t</td>\n";
 	fwrite ($pfile, $txt);
-	if ($pagenum === $numpages)
+	if (!$nextpage)
 		$txt = "\t\t\t\t<td>\n\t\t\t\t\t&nbsp;\n\t\t\t\t</td>\n";
 	else
-		$txt = "\t\t\t\t<td>\n\t\t\t\t\t<a href=\"expage" . (sprintf("%'.03d", $pagenum +	1)) . ".html\"><button class=\"button exbutton\">Next Page</button></a>\n\t\t\t\t</td>\n";
+		$txt = "\t\t\t\t<td>\n\t\t\t\t\t<a href=\"expage" . (sprintf("%'.03d", $nextpage)) . ".html\"><button class=\"button exbutton\">Next Page</button></a>\n\t\t\t\t</td>\n";
 	fwrite ($pfile, $txt);
 	$txt = "\t\t\t</tr>\n\t\t</table>\n\t</center>\n";
 	fwrite ($pfile, $txt);
@@ -479,7 +514,7 @@ function buildpage($pfile, $pagenum, $numpages, $item) {
 	if (is_array($exitems) || is_object($exitems)) {
 		foreach((array) $exitems as $exitem) {
 			getelement($exitem);
-			print_r("Anum: " . $anum . " Enum: " . $enum . "\n");
+//			print_r("Anum: " . $anum . " Enum: " . $enum . "\n");
 			// print_r($exitem . "\n");
 			$txt = "\t\t\t\t\t\t<area href=\"" . $exitem . "\" target=\"_blank\" shape=\"rect\" coords=\"50, 50, 100, 100\" />\n";
 			fwrite ($pfile, $txt);
