@@ -1,50 +1,18 @@
 <?php
-	ini_set('memory_limit', '128M');
+	ini_set('memory_limit', '256M');
+	ini_set('max_execution_time', '600'); //300 seconds = 10 minutes should be more than enough
 
-	// Jan Zikan, Czech Repulic, https://gist.github.com/janzikan
-function resizeImage($sourceImage, $targetImage, $maxWidth, $maxHeight, $quality = 80)
-{
-    // Obtain image from given source file.
-    if (!$image = @imagecreatefromjpeg($sourceImage))
-    {
-        return false;
-    }
-
-    // Get dimensions of source image.
-    list($origWidth, $origHeight) = getimagesize($sourceImage);
-
-    if ($maxWidth == 0)
-    {
-        $maxWidth  = $origWidth;
-    }
-
-    if ($maxHeight == 0)
-    {
-        $maxHeight = $origHeight;
-    }
-
-    // Calculate ratio of desired maximum sizes and original sizes.
-    $widthRatio = $maxWidth / $origWidth;
-    $heightRatio = $maxHeight / $origHeight;
-
-    // Ratio used for calculating new image dimensions.
-    $ratio = min($widthRatio, $heightRatio);
-
-    // Calculate new image dimensions.
-    $newWidth  = (int)$origWidth  * $ratio;
-    $newHeight = (int)$origHeight * $ratio;
-
-    // Create final image with new dimensions.
-    $newImage = imagecreatetruecolor($newWidth, $newHeight);
-    imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
-    imagejpeg($newImage, $targetImage, $quality);
-
-    // Free up the memory.
-    imagedestroy($image);
-    imagedestroy($newImage);
-
-    return true;
-}
+	// Turn off output buffering
+	ini_set('output_buffering', 'off');
+	// Turn off PHP output compression
+	ini_set('zlib.output_compression', false);
+			 
+	//Flush (send) the output buffer and turn off output buffering
+	while (@ob_end_flush());
+	   
+	// Implicitly flush the buffer(s)
+	ini_set('implicit_flush', true);
+	ob_implicit_flush(true);
 
 // Starting clock time in seconds 
 $start_time = microtime(true); 
@@ -70,20 +38,24 @@ $a=1;
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
+			statusOut("Create Page Image File: " . $expage . "\n");
 			resizeImage($exfull, $expage, 800, 0, 100); // Resize full page to page filename. 
 			$exthumb = "t" . sprintf("%'.03d", $anum) . $ftype; // Build thumbnail filename.
 			// Single width pages, maybe
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
+			statusOut("Create Thumbnail Image File " . $expage . "\n");
 			resizeImage($exfull, $exthumb, 200, 0, 100); // Resize full page to thumbnail filename.
 		} else {
 			$exfull = "f" . sprintf("%'.03d", ($count - 1)) . $ftype; // Rebuild old full filename
 			$expage = "p" . sprintf("%'.03d", ($count - 1)) . $ftype; // Build page filename
 			// Double width pages
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
+			statusOut("Create Double Page Image File " . $expage . "\n");
 			resizeImage($exfull, $expage, 1600, 0, 100); // Resize full page to page filename. 
 			$exthumb = "t" . sprintf("%'.03d", ($count - 1)) . $ftype; // Build thumbnail filename.
 			// Double width pages
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
+			statusOut("Create Double Thumbnail Image File " . $expage . "\n");
 			resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
 			$count++;
 			$exfull = "f" . sprintf("%'.03d", ($count)) . $ftype; // Rebuild new full filename
@@ -104,11 +76,13 @@ $a=1;
 //		print_r("exfull: " . $exfull . " Count: " . $count . " expage: " . $expage . "\n");
 		// Single width pages, maybe
 		// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
+		statusOut("Create Double Page Image File " . $expage . ", second chance.\n");
 		resizeImage($exfull, $expage, 1600, 0, 100); // Resize full page to page filename. 
 		$exthumb = "t" . sprintf("%'.03d", $anum) . $ftype; // Build thumbnail filename.
 //		print_r("exfull: " . $exfull . " Count: " . $count . " exthumb: " . $exthumb . "\n");
 		// Single width pages, maybe
 		// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
+		statusOut("Create Double Thumbnail Image File " . $expage . ", second chance.\n");
 		resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
 	}
 	
@@ -126,9 +100,9 @@ $a=1;
 	// Since we incremented $count for missing pages the pages/16 should be close.
 	// Future: potentially pull in frame layout from a data file.
 	$numframes = intdiv($count, 16);
-	print_r("Number of Frames: " . $numframes . "\n");
+	statusOut("Number of Frames: " . $numframes . "\n");
 	$numpages = $count; //May not be valid when accounting for double pages.
-	print_r("Number of Pages: " . $numpages . "\n");
+	statusOut("Number of Pages: " . $numpages . "\n");
 	
 	// Creat variables for use when parsing a file name.
 	$atype = ""; // Array type; f, p, t, i
@@ -142,14 +116,6 @@ for ($iteration = 1; $iteration <= $numframes; $iteration++) {
 	$framefile = fopen("exframe" . sprintf("%'.02d", $iteration) . ".html", "w") or die("Unable to open frame file!");
 	buildframe($framefile, $iteration, $numframes);
 }
-
-// And then build the pages the frame links point to.
-/*
-for ($iteration = 1; $iteration <= $count; $iteration++) {
-	$pagefile = fopen("expage" . sprintf("%'.03d", $iteration) . ".html", "w") or die("Unable to open frame file!");
-	buildpage($pagefile, $iteration, $numpages, $i);
-}
-*/
 
 // And then build the pages the frame links point to.
 foreach ($p as $currpage) {
@@ -184,10 +150,24 @@ foreach ($p as $currpage) {
 	} else { 
 		$nextanum = 0;
 	}
-	print_r("Previous: " . $prevanum . " Current: " . $anum . " Next: " . $nextanum . "\n");
+//	print_r("Previous: " . $prevanum . " Current: " . $anum . " Next: " . $nextanum . "\n");
 	
 	$pagefile = fopen("expage" . sprintf("%'.03d", $anum) . ".html", "w") or die("Unable to open page file!");
 	buildpage($pagefile, $prevanum, $anum, $nextanum, $numpages, $i);
+}
+
+function statusOut($outtext)
+{
+//	ob_flush();
+//	flush();
+
+//	echo str_pad("",1024," ");
+//	echo "<br />";
+
+	echo $outtext;
+
+//	ob_flush();
+//	flush();
 }
 
 function getitems($pagenum)
@@ -327,6 +307,7 @@ function buildframe($ffile, $framenum, $numframes)
 	$nextanum = 0; // Page number
 	$nextenum = 0; // Item number on page
 	$nextftype = ""; // File type (.jpg, .png, etc.)
+	statusOut("Create Frame File: " . $framenum . "\n");
 
 	// Initial page setup
 	$titlefile = fopen("extitle.txt", "r") or die("Unable to open title file!");
@@ -364,10 +345,11 @@ function buildframe($ffile, $framenum, $numframes)
 		$txt = "<a href=\"exframe" . (sprintf("%'.02d", $framenum + 1)) . ".html\"><button class=\"button exbutton\">Next Frame</button></a></td>\n";
 	fwrite ($ffile, $txt);
 	// Exhibit Title
-	$txt = "\t\t\t<tr>\n\t\t\t\t<td align=\"center\">&nbsp;</td>\n\t\t\t\t<td align=\"center\">";
+	$txt = "\t\t\t<tr>\n\t\t\t\t<td align=\"center\" colspan=\"3\">";
 	fwrite ($ffile, $txt);
-	fwrite ($ffile, $extitle);
-	$txt = "\n\t\t\t\t</td>\n\t\t\t\t<td align=\"center\">&nbsp;</td>\n\t\t\t</tr>\n";
+	$txt = "<font size=\"+2\">" . $extitle . "</font>\n";
+	fwrite ($ffile, $txt);
+	$txt = "\t\t\t\t</td>\n\t\t\t</tr>\n";
 	fwrite ($ffile, $txt);
 	$txt = "\t\t</table>\n\t\t</center>\n\t</div>\n";
 	fwrite ($ffile, $txt);
@@ -389,13 +371,13 @@ function buildframe($ffile, $framenum, $numframes)
 		}
 		$nextvalue = next($p);
 		getnextelement($nextvalue);
+//		print_r("anum: " . $anum . " next: " . $nextanum . " index: " . $index . " step: " . $step . "\n");
 		if (($index + $step == $anum) && (intdiv($anum - 1, 16) === ($framenum - 1))) { // Page position matches page number and we're in the right frame
 			if ($step % 4 == 1) { // First page in a frame row
 				$txt = "\t<tr>\n";
 				fwrite ($ffile, $txt);
 			}
-//			print_r("Normal Page\n");
-			if ($nextanum === $anum + 2) {
+			if (($nextanum === $anum + 2)  || (($nextanum === $anum) && ($anum % 16 === 15))) {
 				$txt = "\t\t<td align=\"center\" colspan=\"2\">\n";
 				fwrite ($ffile, $txt);
 			} else {
@@ -406,7 +388,7 @@ function buildframe($ffile, $framenum, $numframes)
 			fwrite ($ffile, $txt);
 			$txt = "\t\t\t<img border=\"2\" src=\"t" .  (sprintf("%'.03d", $anum)) . $ftype . "\" /></a>\n\t\t</td>\n";
 			fwrite ($ffile, $txt);
-			if ($step % 4 == 0) { // Last page in a frame row
+			if (($step % 4 == 0) || (($step % 4 == 3) && ($nextanum === $anum + 2)) || (($step % 4 == 3) && ($nextanum === $anum))) { // Last page in a frame row
 				$txt = "\t</tr>\n";
 				fwrite ($ffile, $txt);
 			}
@@ -441,7 +423,7 @@ function buildframe($ffile, $framenum, $numframes)
 	else
 		$txt = "<a href=\"exframe" . (sprintf("%'.02d", $framenum + 1)) . ".html\"><button class=\"button exbutton\">Next Frame</button></a></td>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t</table>\n\t\t</center>\n\t</div>\n";
+	$txt = "\t\t\t</tr>\n\t\t</table>\n\t\t</center>\n\t</div>\n";
 	fwrite ($ffile, $txt);
 	// Author blurb, update date/time
 	$txt = "<font color=\"blue\"><small><b>Virtual Exhibit Script Authored by - <a href=\"mailto:billsey@seymourfamily.com.com\">Bill Seymour</a></b></small></font><br />\n";
@@ -468,11 +450,13 @@ function buildpage($pfile, $prevpage, $pagenum, $nextpage, $numpages, $item) {
 	global $enum;
 	global $ftype;
 
+	statusOut("Create Page File: " . $pagenum . "\n");
+
 	// Initial page setup
 	$titlefile = fopen("extitle.txt", "r") or die("Unable to open title file!");
 	$extitle = fgets($titlefile);
 	$title = $extitle . " Page " . $pagenum;
-	$upframe = sprintf("%'.02d", (intdiv($pagenum, 16) + 1));
+	$upframe = sprintf("%'.02d", (intdiv($pagenum + 15, 16)));
 //	print_r("pagenum: " . $pagenum . " upframe: " . $upframe . "\n");
 	$txt = "<!DOCTYPE html>\n<html>\n\n<head>";
 	fwrite ($pfile, $txt);
@@ -530,11 +514,56 @@ function buildpage($pfile, $prevpage, $pagenum, $nextpage, $numpages, $item) {
 	fwrite ($pfile, $txt);
 }
 
+	// Jan Zikan, Czech Repulic, https://gist.github.com/janzikan
+	function resizeImage($sourceImage, $targetImage, $maxWidth, $maxHeight, $quality = 80)
+	{
+		// Obtain image from given source file.
+		if (!$image = @imagecreatefromjpeg($sourceImage))
+		{
+			return false;
+		}
+
+		// Get dimensions of source image.
+		list($origWidth, $origHeight) = getimagesize($sourceImage);
+
+		if ($maxWidth == 0)
+		{
+			$maxWidth  = $origWidth;
+		}
+
+		if ($maxHeight == 0)
+		{
+			$maxHeight = $origHeight;
+		}
+
+		// Calculate ratio of desired maximum sizes and original sizes.
+		$widthRatio = $maxWidth / $origWidth;
+		$heightRatio = $maxHeight / $origHeight;
+
+		// Ratio used for calculating new image dimensions.
+		$ratio = min($widthRatio, $heightRatio);
+
+		// Calculate new image dimensions.
+		$newWidth  = (int)$origWidth  * $ratio;
+		$newHeight = (int)$origHeight * $ratio;
+
+		// Create final image with new dimensions.
+		$newImage = imagecreatetruecolor($newWidth, $newHeight);
+		imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
+		imagejpeg($newImage, $targetImage, $quality);
+
+		// Free up the memory.
+		imagedestroy($image);
+		imagedestroy($newImage);
+
+		return true;
+	}
+
 // End clock time in seconds 
 $end_time = microtime(true); 
   
 // Calculate script execution time 
 $execution_time = ($end_time - $start_time); 
   
-echo " Execution time of script = ".$execution_time." sec"; 
+statusOut(" Execution time of script = ".$execution_time." sec"); 
 ?>
