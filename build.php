@@ -24,6 +24,12 @@ $a=1;
 	$i = array(); // Individual Items
 	$items = array(); // Subset, individual items from a single page
 	
+	// Create variables for use when parsing a file name.
+	$atype = ""; // Array type; f, p, t, i
+	$anum = 0; // Page number
+	$enum = 0; // Item number on page
+	$ftype = ""; // File type (.jpg, .png, etc.)
+
 	$dir    = './'; // Current Directory
 	$files = scandir($dir); // Scan for files in directory, alphabetically sorted
 
@@ -104,13 +110,6 @@ $a=1;
 	$numpages = $count; //May not be valid when accounting for double pages.
 	statusOut("Number of Pages: " . $numpages . "\n");
 	
-	// Creat variables for use when parsing a file name.
-	$atype = ""; // Array type; f, p, t, i
-	$anum = 0; // Page number
-	$enum = 0; // Item number on page
-	$ftype = ""; // File type (.jpg, .png, etc.)
-
-
 // Now, build the frame page, or pages, using the thumb array and the frames count.
 for ($iteration = 1; $iteration <= $numframes; $iteration++) {
 	$framefile = fopen("exframe" . sprintf("%'.02d", $iteration) . ".html", "w") or die("Unable to open frame file!");
