@@ -1,7 +1,12 @@
 <?php
-	ini_set('memory_limit', '256M');
+	ini_set('memory_limit', '512M');
 	ini_set('max_execution_time', '600'); //300 seconds = 10 minutes should be more than enough
 
+/**
+ * ...
+ * @version  1.0.2
+ */
+ 
 	// Turn off output buffering
 	ini_set('output_buffering', 'off');
 	// Turn off PHP output compression
@@ -40,6 +45,7 @@ $a=1;
 	foreach($f as $exfull) {
 		getelement($exfull); // filename is parsed for page number and file type
 		$count++;
+		statusOut("anum: " . $anum . " count: " . $count . "\n");
 		if ($count == $anum) {
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
 			// Single width pages, maybe
@@ -63,7 +69,7 @@ $a=1;
 			// Future: resize recognizing odd sized pages, such as three wide in a frame or double tall.
 			statusOut("Create Double Thumbnail Image File " . $expage . "\n");
 			resizeImage($exfull, $exthumb, 400, 0, 100); // Resize full page to thumbnail filename.
-			$count++;
+			$count = $anum;
 			$exfull = "f" . sprintf("%'.03d", ($count)) . $ftype; // Rebuild new full filename
 			$expage = "p" . sprintf("%'.03d", $anum) . $ftype; // Build page filename
 			// Single width pages, maybe
@@ -105,9 +111,11 @@ $a=1;
 	// Figure out how big the exhibit is. 
 	// Since we incremented $count for missing pages the pages/16 should be close.
 	// Future: potentially pull in frame layout from a data file.
-	$numframes = intdiv($count, 16);
+//	$numframes = intdiv($count, 16);
+	getelement(end($f));
+	$numframes = intdiv($anum + 15, 16);
 	statusOut("Number of Frames: " . $numframes . "\n");
-	$numpages = $count; //May not be valid when accounting for double pages.
+	$numpages = $anum; //May not be valid when accounting for empty cells at the end.
 	statusOut("Number of Pages: " . $numpages . "\n");
 	
 // Now, build the frame page, or pages, using the thumb array and the frames count.
@@ -323,20 +331,20 @@ function buildframe($ffile, $framenum, $numframes)
 	$txt = "</head>\n<body>\n";
 	fwrite ($ffile, $txt);
 	// Navigation header table
-	$txt = "\t<div align=\"center\">\n\t<center>\n";
+	$txt = "  <div align=\"center\">\n  <center>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t<table border=\"0\" width=\"100\%\">\n\t\t\t<tr>\n";
+	$txt = "    <table border=\"0\" width=\"100\%\">\n      <tr>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">";
+	$txt = "        <td align=\"center\">";
 	fwrite ($ffile, $txt);
 	if ($framenum === 1)
 		$txt = "&nbsp;</td>\n";
 	else
 		$txt = "<a href=\"exframe" . (sprintf("%'.02d", $framenum - 1)) . ".html\"><button class=\"button exbutton\">Previous Frame</button></a></td>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"../../exhibits.html\"><button class=\"button exbutton\">Back to Exhibits Index Page</button></a>\n\t\t\t\t</td>\n";
+	$txt = "        <td align=\"center\">\n          <a href=\"../../exhibits.html\"><button class=\"button exbutton\">Back to Exhibits Index Page</button></a>\n        </td>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">";
+	$txt = "        <td align=\"center\">";
 	fwrite ($ffile, $txt);
 	if ($framenum === $numframes)
 		$txt = "&nbsp;</td>\n";
@@ -344,19 +352,19 @@ function buildframe($ffile, $framenum, $numframes)
 		$txt = "<a href=\"exframe" . (sprintf("%'.02d", $framenum + 1)) . ".html\"><button class=\"button exbutton\">Next Frame</button></a></td>\n";
 	fwrite ($ffile, $txt);
 	// Exhibit Title
-	$txt = "\t\t\t<tr>\n\t\t\t\t<td align=\"center\" colspan=\"3\">";
+	$txt = "      <tr>\n        <td align=\"center\" colspan=\"3\">";
 	fwrite ($ffile, $txt);
 	$txt = "<font size=\"+2\">" . $extitle . "</font>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t\t</td>\n\t\t\t</tr>\n";
+	$txt = "        </td>\n      </tr>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t</table>\n\t\t</center>\n\t</div>\n";
+	$txt = "    </table>\n    </center>\n  </div>\n";
 	fwrite ($ffile, $txt);
 	// End of navigation header table
 	
-	$txt = "\t<div align=\"center\">\n\t<center>\n";
+	$txt = "  <div align=\"center\">\n  <center>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t<table border=\"0\" width=\"100\%\">\n\t<tbody>\n";
+	$txt = "  <table border=\"0\" width=\"100\%\">\n  <tbody>\n";
 	fwrite ($ffile, $txt);
 	
 	$step = 1; // Remainder of page position on a frame row, we might have to deal with three wide pages as well as doubled
@@ -370,59 +378,86 @@ function buildframe($ffile, $framenum, $numframes)
 		}
 		$nextvalue = next($p);
 		getnextelement($nextvalue);
-//		print_r("anum: " . $anum . " next: " . $nextanum . " index: " . $index . " step: " . $step . "\n");
+		print_r("anum: " . $anum . " next: " . $nextanum . " index: " . $index . " step: " . $step . "\n");
 		if (($index + $step == $anum) && (intdiv($anum - 1, 16) === ($framenum - 1))) { // Page position matches page number and we're in the right frame
 			if ($step % 4 == 1) { // First page in a frame row
-				$txt = "\t<tr>\n";
+				$txt = "  <tr>\n";
 				fwrite ($ffile, $txt);
+				statusOut("First page in a frame row\n");
 			}
-			if (($nextanum === $anum + 2)  || (($nextanum === $anum) && ($anum % 16 === 15))) {
-				$txt = "\t\t<td align=\"center\" colspan=\"2\">\n";
+			if (($nextanum === $anum + 2)) {
+				$txt = "    <td align=\"center\" colspan=\"2\">\n";
 				fwrite ($ffile, $txt);
+				statusOut("next page is two cells away\n");
+			} elseif (($nextanum === $anum + 6)) {
+				$txt = "    <td align=\"center\" colspan=\"2\">\n";
+				fwrite ($ffile, $txt);
+				statusOut("next page is six cells away\n");
+			} elseif (($nextanum === $anum) && ($anum % 16 === 15)) {
+				$txt = "    <td align=\"center\" colspan=\"2\">\n";
+				fwrite ($ffile, $txt);
+				statusOut("next page is not there\n");
 			} else {
-				$txt = "\t\t<td align=\"center\">\n";
+				$txt = "    <td align=\"center\">\n";
 				fwrite ($ffile, $txt);
+				statusOut("Next page is next cell\n");
 			}
-			$txt = "\t\t\t<a href=\"expage" . (sprintf("%'.03d", $anum)) . ".html\">\n";
+			$txt = "      <a href=\"expage" . (sprintf("%'.03d", $anum)) . ".html\">\n";
 			fwrite ($ffile, $txt);
-			$txt = "\t\t\t<img border=\"2\" src=\"t" .  (sprintf("%'.03d", $anum)) . $ftype . "\" /></a>\n\t\t</td>\n";
+			$txt = "      <img border=\"2\" src=\"t" .  (sprintf("%'.03d", $anum)) . $ftype . "\" /></a>\n    </td>\n";
 			fwrite ($ffile, $txt);
-			if (($step % 4 == 0) || (($step % 4 == 3) && ($nextanum === $anum + 2)) || (($step % 4 == 3) && ($nextanum === $anum))) { // Last page in a frame row
-				$txt = "\t</tr>\n";
+			if (($step % 4 == 0)) {
+				$txt = "  </tr>\n";
 				fwrite ($ffile, $txt);
+				statusOut("last page on row\n");
+			} elseif (($step % 4 == 3) && ($nextanum === $anum + 2)) {
+				$txt = "  </tr>\n";
+				fwrite ($ffile, $txt);
+				statusOut("page in third cell and next two away\n");
+			} elseif (($step % 4 == 3) && ($nextanum === $anum + 6)) {
+				$txt = "  </tr>\n";
+				fwrite ($ffile, $txt);
+				statusOut("page in third cell and next six away\n");
+			} elseif (($step % 4 == 3) && ($nextanum === $anum)) { // Last page in a frame row
+				$txt = "  </tr>\n";
+				fwrite ($ffile, $txt);
+				statusOut("page in third cell and no next\n");
 			}
 			$step++;
-			if ($nextanum === $anum + 2)
+			if ($nextanum === $anum + 2) {
 				$step++;
+			} elseif ($nextanum === $anum + 6) {
+				$step = $step + 5;
+			}
 		}
 		else
 			print_r("Page No: " . ($index + $step) . " Num: " . $anum . "\n");
 	}
-	$txt = "\t</tbody>\n</table>\n</center>\n</div>\n";
+	$txt = "  </tbody>\n</table>\n</center>\n</div>\n";
 	fwrite ($ffile, $txt);
 	
 	// Navigation footer table
-	$txt = "\t<div align=\"center\">\n\t<center>\n";
+	$txt = "  <div align=\"center\">\n  <center>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t<table border=\"0\" width=\"100\%\">\n\t\t\t<tr>\n";
+	$txt = "    <table border=\"0\" width=\"100\%\">\n      <tr>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">";
+	$txt = "        <td align=\"center\">";
 	fwrite ($ffile, $txt);
 	if ($framenum === 1)
 		$txt = "&nbsp;</td>\n";
 	else
 		$txt = "<a href=\"exframe" . (sprintf("%'.02d", $framenum - 1)) . ".html\"><button class=\"button exbutton\">Previous Frame</button></a></td>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"../../exhibits.html\"><button class=\"button exbutton\">Back to Exhibits Index Page</button></a>\n\t\t\t\t</td>\n";
+	$txt = "        <td align=\"center\">\n          <a href=\"../../exhibits.html\"><button class=\"button exbutton\">Back to Exhibits Index Page</button></a>\n        </td>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">";
+	$txt = "        <td align=\"center\">";
 	fwrite ($ffile, $txt);
 	if ($framenum === $numframes)
 		$txt = "&nbsp;</td>\n";
 	else
 		$txt = "<a href=\"exframe" . (sprintf("%'.02d", $framenum + 1)) . ".html\"><button class=\"button exbutton\">Next Frame</button></a></td>\n";
 	fwrite ($ffile, $txt);
-	$txt = "\t\t\t</tr>\n\t\t</table>\n\t\t</center>\n\t</div>\n";
+	$txt = "      </tr>\n    </table>\n    </center>\n  </div>\n";
 	fwrite ($ffile, $txt);
 	// Author blurb, update date/time
 	$txt = "<font color=\"blue\"><small><b>Virtual Exhibit Script Authored by - <a href=\"mailto:billsey@seymourfamily.com.com\">Bill Seymour</a></b></small></font><br />\n";
@@ -466,30 +501,30 @@ function buildpage($pfile, $prevpage, $pagenum, $nextpage, $numpages, $item) {
 	$txt = "</head>\n<body>\n";
 	fwrite ($pfile, $txt);
 	// Navigation header table
-	$txt = "\t<div align=\"center\">\n\t<center>\n";
+	$txt = "  <div align=\"center\">\n  <center>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t<table border=\"0\" width=\"100%\">\n\t\t\t<tr>\n";
+	$txt = "    <table border=\"0\" width=\"100%\">\n      <tr>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">";
+	$txt = "        <td align=\"center\">";
 	fwrite ($pfile, $txt);
 	if (!$prevpage)
-		$txt = "\t\t\t\t<td>\n\t\t\t\t\t&nbsp;\n\t\t\t\t</td>\n";
+		$txt = "        <td>\n          &nbsp;\n        </td>\n";
 	else
 		$txt = "<a href=\"expage" . (sprintf("%'.03d", $prevpage)) . ".html\"><button class=\"button exbutton\">Previous Page</button></a></td>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t\t<td align=\"center\">\n\t\t\t\t\t<a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . $upframe . "</button></a>\n\t\t\t\t</td>\n";
+	$txt = "        <td align=\"center\">\n          <a href=\"exframe" . $upframe . ".html\"><button class=\"button exbutton\">Back to Frame Page " . $upframe . "</button></a>\n        </td>\n";
 	fwrite ($pfile, $txt);
 	if (!$nextpage)
-		$txt = "\t\t\t\t<td>\n\t\t\t\t\t&nbsp;\n\t\t\t\t</td>\n";
+		$txt = "        <td>\n          &nbsp;\n        </td>\n";
 	else
-		$txt = "\t\t\t\t<td>\n\t\t\t\t\t<a href=\"expage" . (sprintf("%'.03d", $nextpage)) . ".html\"><button class=\"button exbutton\">Next Page</button></a>\n\t\t\t\t</td>\n";
+		$txt = "        <td>\n          <a href=\"expage" . (sprintf("%'.03d", $nextpage)) . ".html\"><button class=\"button exbutton\">Next Page</button></a>\n        </td>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t</tr>\n\t\t</table>\n\t</center>\n";
+	$txt = "      </tr>\n    </table>\n  </center>\n";
 	fwrite ($pfile, $txt);
 	// Exhibit Page table
-	$txt = "\t<center>\n\t\t<table>\n\t\t\t<tr>\n\t\t\t\t<td>\n";
+	$txt = "  <center>\n    <table>\n      <tr>\n        <td>\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t\t\t<map name=\"FPMap0\">\n";
+	$txt = "          <map name=\"FPMap0\">\n";
 	fwrite ($pfile, $txt);
 	// print_r($pagenum . "\n");
 	$exitems = getitems($pagenum);
@@ -499,17 +534,17 @@ function buildpage($pfile, $prevpage, $pagenum, $nextpage, $numpages, $item) {
 			getelement($exitem);
 //			print_r("Anum: " . $anum . " Enum: " . $enum . "\n");
 			// print_r($exitem . "\n");
-			$txt = "\t\t\t\t\t\t<area href=\"" . $exitem . "\" target=\"_blank\" shape=\"rect\" coords=\"50, 50, 100, 100\" />\n";
+			$txt = "            <area href=\"" . $exitem . "\" target=\"_blank\" shape=\"rect\" coords=\"50, 50, 100, 100\" />\n";
 			fwrite ($pfile, $txt);
 		}
 	} else {
-		$txt = "\t\t\t\t\t\t<area href=\"nothing\" target=\"_blank\" shape=\"rect\" coords=\"50, 50, 100, 100\" />\n";
+		$txt = "            <area href=\"nothing\" target=\"_blank\" shape=\"rect\" coords=\"50, 50, 100, 100\" />\n";
 	}
-	$txt = "\t\t\t\t\t\t<area href=\"f" . (sprintf("%'.03d", $pagenum)) . ".jpg\" target=\"_blank\" shape=\"default\" />\n";
+	$txt = "            <area href=\"f" . (sprintf("%'.03d", $pagenum)) . ".jpg\" target=\"_blank\" shape=\"default\" />\n";
 	fwrite ($pfile, $txt);
-	$txt = "\t\t\t\t\t</map>\n\t\t\t\t<img class=\"dropshadow\" border=\"0\" src=\"p" . (sprintf("%'.03d", $pagenum)) . ".jpg\" usemap=\"#FPMap0\" />\n";
+	$txt = "          </map>\n        <img class=\"dropshadow\" border=\"0\" src=\"p" . (sprintf("%'.03d", $pagenum)) . ".jpg\" usemap=\"#FPMap0\" />\n";
 	fwrite ($pfile, $txt);
-	$txt="\t\t\t</td>\n\t\t</tr>\n\t</table>\n</center>\n";
+	$txt="      </td>\n    </tr>\n  </table>\n</center>\n";
 	fwrite ($pfile, $txt);
 }
 
