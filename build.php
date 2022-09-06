@@ -13,6 +13,7 @@
 	// Implicitly flush the buffer(s)
 	ini_set('implicit_flush', true);
 	ob_implicit_flush(true);
+	ob_start();
 
 // Starting clock time in seconds 
 $start_time = microtime(true); 
@@ -156,17 +157,18 @@ foreach ($p as $currpage) {
 }
 
 function statusOut($outtext)
-{
-//	ob_flush();
-//	flush();
+{	// https://www.codeproject.com/Tips/680085/Real-time-Updating-of-PHP-Output 
+	// This should work, but doesn't seem to. :(
+	ob_flush();
+	flush();
 
-//	echo str_pad("",1024," ");
-//	echo "<br />";
+	echo str_pad("",1024," ");
+	echo "<br />";
 
 	echo $outtext;
 
-//	ob_flush();
-//	flush();
+	ob_flush();
+	flush();
 }
 
 function getitems($pagenum)
@@ -525,7 +527,7 @@ function buildpage($pfile, $prevpage, $pagenum, $nextpage, $numpages, $item) {
 	function resizeImage($sourceImage, $targetImage, $maxWidth, $maxHeight, $quality = 80)
 	{
 		// Obtain image from given source file.
-		if (!$image = @imagecreatefromjpeg($sourceImage))
+		if (!$image = @imageCreateFromAny($sourceImage))
 		{
 			return false;
 		}
@@ -566,6 +568,29 @@ function buildpage($pfile, $prevpage, $pagenum, $nextpage, $numpages, $item) {
 		return true;
 	}
 
+function imageCreateFromAny($filepath) {
+    $type = exif_imagetype($filepath); // [] if you don't have exif you could use getImageSize()
+    $allowedTypes = array(
+        1,  // [] gif
+        2,  // [] jpg
+        3,  // [] png
+    );
+    if (!in_array($type, $allowedTypes)) {
+        return false;
+    }
+    switch ($type) {
+        case 1 :
+            $im = imageCreateFromGif($filepath);
+        break;
+        case 2 :
+            $im = imageCreateFromJpeg($filepath);
+        break;
+        case 3 :
+            $im = imageCreateFromPng($filepath);
+        break;
+    }   
+    return $im; 
+} 
 // End clock time in seconds 
 $end_time = microtime(true); 
   
